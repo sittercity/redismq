@@ -13,6 +13,16 @@ type Consumer struct {
 	Queue *Queue
 }
 
+type readTimeout bool
+
+func (readTimeout) Error() string {
+	return "Timeout occurred reading from the consumer"
+}
+
+func (t readTimeout) Timeout() bool {
+	return bool(t)
+}
+
 // AddConsumer returns a conumser that can write from the queue
 func (queue *Queue) AddConsumer(name string) (c *Consumer, err error) {
 	c = &Consumer{Name: name, Queue: queue}
@@ -35,7 +45,12 @@ func (consumer *Consumer) Get(timeout time.Duration) (*Package, error) {
 	if consumer.HasUnacked() {
 		return nil, fmt.Errorf("unacked Packages found")
 	}
-	return consumer.unsafeGet(timeout)
+	pkg, err := consumer.unsafeGet(timeout)
+	if err == redis.Nil {
+		return pkg, readTimeout(true)
+	} else {
+		return pkg, err
+	}
 }
 
 // NoWaitGet returns a single package from the queue (returns nil, nil if no package in queue)
