@@ -66,6 +66,12 @@ func (suite *TestSuite) TestPutGetAndAck(c *C) {
 	c.Check(suite.consumer.HasUnacked(), Equals, false)
 }
 
+func (suite *TestSuite) TestGetTimesOut(c *C) {
+	_, err := suite.consumer.Get(1 * time.Second)
+	c.Check(err, Not(Equals), nil)
+	c.Check(err, Equals, readTimeout(true))
+}
+
 // should queue packages
 func (suite *TestSuite) TestQueuingPackages(c *C) {
 	for i := 0; i < 100; i++ {
